@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>All Logs - Insider Threat Detection</title>
+<style>
+.dashboard-card {
+    background: rgba(255,255,255,0.95);
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    padding: 20px;
+}
+
+.log-row {
+    transition: all 0.25s ease;
+}
+.log-row:hover {
+    background: rgba(52,152,219,0.08);
+    transform: scale(1.01);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <div class="dashboard-card">
+        <h4 class="mb-4">
+            <i class="fas fa-database mr-2"></i> Archived Logs
+        </h4>
+
+        {% if log_files %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Log File</th>
+                        <th>Created Time</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in log_files %}
+                    <tr class="log-row">
+                        <td>{{ loop.index }}</td>
+                        <td>{{ log.filename }}</td>
+                        <td>{{ log.created }}</td>
+                        <td>
+                            <a href="{{ url_for('download_log', filename=log.filename) }}"
+                               class="btn btn-sm btn-primary">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p class="text-muted text-center">No archived logs available yet.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

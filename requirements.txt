@@ -1,0 +1,8 @@
+Flask
+Werkzeug
+numpy
+pandas
+joblib
+scikit-learn
+pyvis
+networkx

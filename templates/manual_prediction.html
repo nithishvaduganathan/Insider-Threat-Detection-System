@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>Manual Prediction - Insider Threat Detection System</title>
+<style>
+    .prediction-form {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .result-card {
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+    
+    .result-card .card-header {
+        background: linear-gradient(to right, #4e54c8, #8f94fb);
+        color: white;
+    }
+    
+    .keyword-badge {
+        margin-right: 5px;
+        margin-bottom: 5px;
+    }
+    
+    .form-row {
+        margin-bottom: 15px;
+    }
+    
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .form-section h5 {
+        color: #495057;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .email-preview {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        max-height: 200px;
+        overflow-y: auto;
+        font-family: monospace;
+    }
+    
+    .progress {
+        height: 25px;
+        border-radius: 50px;
+        margin-bottom: 10px;
+    }
+    
+    .prediction-value {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+    
+    .prediction-normal {
+        color: #28a745;
+    }
+    
+    .prediction-threat {
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="prediction-form animated fadeInUp">
+                <h2 class="mb-4">Manual Prediction</h2>
+                
+                {% if results %}
+                    <div class="result-card">
+                        <div class="card-header">
+                            <h4 class="mb-0">Prediction Results</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Red Team Status</h5>
+                                    {% if results.is_red_team %}
+                                        <p class="prediction-value prediction-threat">FLAGGED AS RED TEAM</p>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-danger" style="width: {{ results.red_team_probability * 100 }}%"></div>
+                                        </div>
+                                        <p>Probability: {{ "%.2f"|format(results.red_team_probability * 100) }}%</p>
+                                    {% else %}
+                                        <p class="prediction-value prediction-normal">NORMAL USER</p>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-success" style="width: {{ (1 - results.red_team_probability) * 100 }}%"></div>
+                                        </div>
+                                        <p>Normal Probability: {{ "%.2f"|format((1 - results.red_team_probability) * 100) }}%</p>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Anomaly Score</h5>
+                                    <p class="prediction-value">{{ "%.2f"|format(results.anomaly_score) }}</p>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-info" style="width: {{ results.anomaly_score * 100 }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if results.email_suspicious %}
+                                <div class="alert alert-warning mt-3">
+                                    <h6>Email Content Analysis</h6>
+                                    <p><strong>Status:</strong> <span class="text-danger">Email contains suspicious keywords</span></p>
+                                    <p><strong>Keywords Found:</strong>
+                                        {% for keyword, found in results.keyword_flags.items() %}
+                                            {% if found %}
+                                                <span class="badge badge-danger keyword-badge">{{ keyword }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </p>
+                                    <div class="email-preview mt-2">
+                                        {{ results.email_content[:500] }}{% if results.email_content|length > 500 %}...{% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="form-section">
+                        <h5><i class="fas fa-chart-line mr-2"></i>User Behavior Metrics</h5>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="login_duration">Login Duration (hours)</label>
+                                <input type="number" class="form-control" id="login_duration" name="login_duration" step="0.1" min="0" max="24" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="file_access">File Access Count</label>
+                                <input type="number" class="form-control" id="file_access" name="file_access" min="0" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="usb_plug">USB Plug Count</label>
+                                <input type="number" class="form-control" id="usb_plug" name="usb_plug" min="0" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="usb_duration">USB Total Duration (minutes)</label>
+                                <input type="number" class="form-control" id="usb_duration" name="usb_duration" min="0" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="email_total">Email Total Count</label>
+                                <input type="number" class="form-control" id="email_total" name="email_total" min="0" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="email_suspicious">Email Suspicious Count</label>
+                                <input type="number" class="form-control" id="email_suspicious" name="email_suspicious" min="0" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="out_of_session">Out of Session Count</label>
+                            <input type="number" class="form-control" id="out_of_session" name="out_of_session" min="0" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h5><i class="fas fa-envelope mr-2"></i>Email Content Analysis</h5>
+                        <div class="form-group">
+                            <label for="email_content">Paste Email Content</label>
+                            <textarea class="form-control" id="email_content" name="email_content" rows="5" placeholder="Paste email content here..."></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email_file">Or Upload Email as Text File</label>
+                            <input type="file" class="form-control-file" id="email_file" name="email_file" accept=".txt">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-lg btn-block mt-4">
+                        <i class="fas fa-search mr-2"></i>Predict
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card animated fadeInRight">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Suspicious Keywords</h5>
+                </div>
+                <div class="card-body">
+                    <p>The system will check for these keywords in email content:</p>
+                    <ul class="list-group list-group-flush">
+                        {% for keyword in ['confidential', 'urgent', 'password', 'secret', 'invoice', 'transfer'] %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ keyword }}
+                            <span class="badge badge-danger badge-pill">High Risk</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        If any of these keywords are found, the email will be flagged as suspicious and may increase the threat level.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-4 animated fadeInRight" style="animation-delay: 0.2s">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Risk Indicators</h5>
+                </div>
+                <div class="card-body">
+                    <div class="risk-indicator mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>High File Access</span>
+                            <span class="badge badge-warning">> 80 files</span>
+                        </div>
+                        <div class="progress mt-1">
+                            <div class="progress-bar" style="width: 25%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="risk-indicator mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>USB Usage</span>
+                            <span class="badge badge-warning">> 2 plugs</span>
+                        </div>
+                        <div class="progress mt-1">
+                            <div class="progress-bar" style="width: 25%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="risk-indicator mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Suspicious Emails</span>
+                            <span class="badge badge-warning">> 3 emails</span>
+                        </div>
+                        <div class="progress mt-1">
+                            <div class="progress-bar" style="width: 25%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="risk-indicator">
+                        <div class="d-flex justify-content-between">
+                            <span>Out-of-Session Access</span>
+                            <span class="badge badge-warning">> 1 access</span>
+                        </div>
+                        <div class="progress mt-1">
+                            <div class="progress-bar" style="width: 25%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+<script>
+    $(document).ready(function() {
+        // Add animation to form inputs
+        $('input, textarea, select').focus(function() {
+            $(this).parent('.form-group').addClass('focused');
+        }).blur(function() {
+            $(this).parent('.form-group').removeClass('focused');
+        });
+    });
+</script>
+{% endblock %}
