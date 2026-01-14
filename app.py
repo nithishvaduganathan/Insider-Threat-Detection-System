@@ -720,4 +720,4 @@ if __name__ == '__main__':
     # Generate initial logs
     generate_synthetic_logs()
     
-    app.run(debug=True)
+    app.run()
